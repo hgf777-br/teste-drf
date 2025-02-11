@@ -1,0 +1,28 @@
+services:
+  api-server:
+    build: .
+    env_file:
+      - ./.env.dev
+    command: >
+      bash -c "python manage.py makemigrations &&
+                python manage.py migrate &&
+                python manage.py collectstatic --noinput &&
+                gunicorn tegge.wsgi:application --bind 0.0.0.0:8000 --access-logfile - --error-logfile - --capture-output --log-level debug --workers 4 --threads 4"
+    volumes:
+      - static_volume:/home/app/staticfiles
+    expose:
+      - 8000
+
+  nginx:
+    build: ./nginx
+    volumes:
+      # - /etc/letsencrypt/:/etc/letsencrypt/
+      - static_volume:/home/app/staticfiles
+    ports:
+      - 80:80
+      - 443:443
+    depends_on:
+      - api-server
+
+volumes:
+  static_volume: {}
